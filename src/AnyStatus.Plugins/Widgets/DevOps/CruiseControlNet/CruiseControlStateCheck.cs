@@ -1,5 +1,5 @@
 using AnyStatus.API;
-using AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet.Enumerations;
+using AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet.Extensions;
 using AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet.Models;
 using System;
 using System.Linq;
@@ -35,10 +35,8 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
             var projectStatus = await GetCruiseControlProjectStatusAsync(request.DataContext).ConfigureAwait(false);
             if (projectStatus == null)
             {
-                var message = $"Could not retrieve current state of project '{request.DataContext.ProjectName}' from server '{request.DataContext.XmlReportUrl}'.";
-                this._logger.Info(message);
-                request.DataContext.State = State.Unknown;
-                request.DataContext.StateText = message;
+                this._logger.Info($"Could not retrieve current state of project '{request.DataContext.ProjectName}' from server '{request.DataContext.XmlStatusReportUrl}'.");
+                request.DataContext.State = State.Invalid;
                 return;
             }
 
@@ -48,40 +46,10 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
                 return;
             }
 
-            this._logger.Debug($"Retrieved status for project '{request.DataContext.ProjectName}': {projectStatus.BuildStatus}.");
+            var convertedState = projectStatus.BuildStatus.ToAnyStatusState();
+            this._logger.Debug($"Retrieved status for project '{request.DataContext.ProjectName}': {projectStatus.BuildStatus} --> {convertedState}.");
 
-            switch (projectStatus.BuildStatus)
-            {
-                case CruiseControlIntegrationStatus.Success:
-                    {
-                        var message = $"Project '{projectStatus?.Name}' ({projectStatus?.BuildLabel}) successful.";
-                        this._logger.Debug(message);
-                        request.DataContext.State = State.Ok;
-                        request.DataContext.StateText = message;
-                        break;
-                    }
-
-                case CruiseControlIntegrationStatus.Failure:
-                    {
-                        var message = $"Project {projectStatus?.Name} failed to build. Next try at {projectStatus?.NextBuildTime:g}.";
-                        this._logger.Debug(message);
-                        request.DataContext.State = State.Failed;
-                        request.DataContext.StateText = message;
-                        break;
-                    }
-
-                case CruiseControlIntegrationStatus.Exception:
-                    {
-                        request.DataContext.State = State.Error;
-                        break;
-                    }
-
-                default:
-                    {
-                        request.DataContext.State = State.Unknown;
-                        break;
-                    }
-            }
+            request.DataContext.State = convertedState;
         }
 
         private async Task<CruiseControlProjectStatus> GetCruiseControlProjectStatusAsync(CruiseControlNetWidget cruiseControlJob)
@@ -96,14 +64,14 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
                 try
                 {
                     // Request the XML status report from the CruiseControl.Net server and ensure that it was successful
-                    response = await client.GetAsync(cruiseControlJob.XmlReportUrl).ConfigureAwait(false);
+                    response = await client.GetAsync(cruiseControlJob.XmlStatusReportUrl).ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
                 }
                 catch (Exception exception)
                 {
                     if (response == null)
                     {
-                        this._logger.Error(exception, $"Did not receive any data in response of query for URL {cruiseControlJob.XmlReportUrl}.");
+                        this._logger.Error(exception, $"Did not receive any data in response of query for URL {cruiseControlJob.XmlStatusReportUrl}.");
                     }
                     else
                     {
@@ -118,14 +86,14 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
                     XmlSerializer xmlSerializer = null;
                     try
                     {
-#if DEBUG
                         xmlSerializer = new XmlSerializer(typeof(CruiseControlProjects));
+#if DEBUG
                         xmlSerializer.UnknownAttribute += XmlSerializer_UnknownAttribute;
                         xmlSerializer.UnknownElement += XmlSerializer_UnknownElement;
                         xmlSerializer.UnknownNode += XmlSerializer_UnknownNode;
                         xmlSerializer.UnreferencedObject += XmlSerializer_UnreferencedObject;
 #endif
-                        var cruiseControlProjects = (CruiseControlProjects)new XmlSerializer(typeof(CruiseControlProjects)).Deserialize(stream);
+                        var cruiseControlProjects = (CruiseControlProjects)xmlSerializer.Deserialize(stream);
                         if (cruiseControlProjects?.ProjectStatus != null)
                         {
                             // Find the matching project status based on the project's name
@@ -183,7 +151,6 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
 
             this._logger.Debug("Health check canceled due to request by cancellation token.");
             request.DataContext.State = State.Unknown;
-            request.DataContext.StateText = "Cancellation requested by user.";
 
             return true;
         }

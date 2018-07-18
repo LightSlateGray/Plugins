@@ -39,7 +39,7 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet.Models
         /// The label of the last build.
         /// </summary>
         [XmlAttribute("lastBuildLabel")]
-        public int BuildLabel { get; set; }
+        public string BuildLabel { get; set; }
 
         /// <summary>
         /// The date and time the project last built successfully.

@@ -2,6 +2,7 @@ using AnyStatus.API;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Xml.Serialization;
 using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
@@ -84,12 +85,14 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
         /// <summary>
         /// The URL of the CruiseControl.NET server web dashboard, also known as farm report.
         /// </summary>
+        [XmlIgnore]
         [Browsable(false)]
         public string ViewFarmReportUrl { get; private set; }
 
         /// <summary>
         /// The URL where the CruiseControl.NET server publishes the XML status report of all projects.
         /// </summary>
+        [XmlIgnore]
         [Browsable(false)]
         public string XmlStatusReportUrl { get; private set; }
 

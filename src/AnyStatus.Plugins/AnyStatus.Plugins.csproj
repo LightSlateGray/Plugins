@@ -87,6 +87,7 @@
     <Compile Include="Widgets\DevOps\Coveralls\CoveredPercentQuery.cs" />
     <Compile Include="Widgets\DevOps\Coveralls\OpenWebPage.cs" />
     <Compile Include="Widgets\DevOps\AppVeyor\Build\StartAppVeyorBuild.cs" />
+    <Compile Include="Widgets\DevOps\CruiseControlNet\CruiseControlOpenWebPage.cs" />
     <Compile Include="Widgets\DevOps\CruiseControlNet\CruiseControlStartBuildJob.cs" />
     <Compile Include="Widgets\DevOps\CruiseControlNet\Extensions\CruiseControlIntegrationStatusExtensions.cs" />
     <Compile Include="Widgets\HealthChecks\IIS\AppPool\RestartAppPool.cs" />

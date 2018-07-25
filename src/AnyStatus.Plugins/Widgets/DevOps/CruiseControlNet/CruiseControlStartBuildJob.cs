@@ -48,7 +48,7 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
                         {
                             new KeyValuePair<string, string>("forceBuild", "true"),
                             new KeyValuePair<string, string>("projectName", cruiseControlJob.ProjectName),
-                            new KeyValuePair<string, string>("serverName", "local"),
+                            new KeyValuePair<string, string>("serverName", cruiseControlJob.ServerName),
                         });
 
                     // Post a request to force a new integration build the project

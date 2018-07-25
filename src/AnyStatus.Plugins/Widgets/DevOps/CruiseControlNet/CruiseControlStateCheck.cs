@@ -22,12 +22,11 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
 
         public async Task Handle(HealthCheckRequest<CruiseControlNetWidget> request, CancellationToken cancellationToken)
         {
-            // Initialize the resulting state
-            request.DataContext.State = State.Unknown;
-
             // Check for cancellation
             if (this.CheckForCancellation(request, cancellationToken))
             {
+                // Update the current state to indicate an unknown state
+                request.DataContext.State = State.Unknown;
                 return;
             }
 
@@ -40,9 +39,15 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
                 return;
             }
 
+            // Store retrieved data within properties for later user
+            request.DataContext.ServerName = projectStatus.ServerName;
+            request.DataContext.WebURL = projectStatus.WebURL;
+
             // Check for cancellation
             if (this.CheckForCancellation(request, cancellationToken))
             {
+                // Update the current state to indicate an unknown state
+                request.DataContext.State = State.Unknown;
                 return;
             }
 

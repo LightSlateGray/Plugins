@@ -163,17 +163,17 @@ namespace AnyStatus.Plugins.Widgets.DevOps.CruiseControlNet
 #if DEBUG
         private void XmlSerializer_UnknownAttribute(object sender, XmlAttributeEventArgs eventArgs)
         {
-            this._logger.Info($"Found unknown attribute at line {eventArgs.LineNumber}, position {eventArgs.LinePosition}: '{eventArgs.Attr}' during de-serialization of type {eventArgs.ObjectBeingDeserialized?.GetType().FullName}.");
+            this._logger.Info($"Found unknown attribute '{eventArgs.Attr.Name}' at line {eventArgs.LineNumber}, position {eventArgs.LinePosition}: '{eventArgs.Attr}' during de-serialization of type {eventArgs.ObjectBeingDeserialized?.GetType().FullName}.");
         }
 
         private void XmlSerializer_UnknownElement(object sender, XmlElementEventArgs eventArgs)
         {
-            this._logger.Info($"Found unknown element at line {eventArgs.LineNumber}, position {eventArgs.LinePosition}: '{eventArgs.Element}' during de-serialization of type {eventArgs.ObjectBeingDeserialized?.GetType().FullName}.");
+            this._logger.Info($"Found unknown element '{eventArgs.Element.Name}' at line {eventArgs.LineNumber}, position {eventArgs.LinePosition}: '{eventArgs.Element}' during de-serialization of type {eventArgs.ObjectBeingDeserialized?.GetType().FullName}.");
         }
 
         private void XmlSerializer_UnknownNode(object sender, XmlNodeEventArgs eventArgs)
         {
-            this._logger.Info($"Found unknown node type at line {eventArgs.LineNumber}, position {eventArgs.LinePosition}: '{eventArgs.NodeType}' during de-serialization of type {eventArgs.ObjectBeingDeserialized?.GetType().FullName}.");
+            this._logger.Info($"Found unknown node type {eventArgs.NodeType} called '{eventArgs.Name}' at line {eventArgs.LineNumber}, position {eventArgs.LinePosition}: '{eventArgs.NodeType}' during de-serialization of type {eventArgs.ObjectBeingDeserialized?.GetType().FullName}.");
         }
 
         private void XmlSerializer_UnreferencedObject(object sender, UnreferencedObjectEventArgs eventArgs)

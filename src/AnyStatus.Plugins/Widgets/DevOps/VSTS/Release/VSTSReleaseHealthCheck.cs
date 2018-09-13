@@ -16,70 +16,68 @@ namespace AnyStatus
     {
         public async Task Handle(HealthCheckRequest<VSTSRelease_v1> request, CancellationToken cancellationToken)
         {
-            var widget = request.DataContext; // note, Data Context is auto-validated by the framework.
+            var widget = request.DataContext ?? throw new InvalidOperationException();
 
-            var client = new VstsClient(new VstsConnection());
+            var client = new VstsClient();
 
-            widget.MapTo(client.Connection);
+            widget.MapTo(client);
 
-            if (widget.DefinitionId == null)
+            if (widget.ReleaseId == null)
             {
                 var definition = await client
                     .GetReleaseDefinitionAsync(widget.ReleaseDefinitionName)
                         .ConfigureAwait(false);
 
-                widget.DefinitionId = definition.Id;
+                widget.ReleaseId = definition.Id;
             }
 
             var lastRelease = await client
-                .GetLastReleaseAsync(widget.DefinitionId.Value)
+                .GetLastReleaseAsync(widget.ReleaseId.Value)
                     .ConfigureAwait(false);
 
             var releaseDetails = await client
                 .GetReleaseDetailsAsync(lastRelease.Id)
                     .ConfigureAwait(false);
 
-            RemoveEnvironments(widget, releaseDetails);
+            RemoveEnvironments(widget, releaseDetails.Environments);
 
             AddEnvironments(widget, releaseDetails);
         }
 
-        private static void RemoveEnvironments(VSTSRelease_v1 widget, VSTSReleaseDetails release)
+        private static void RemoveEnvironments(Widget widget, ReleaseEnvironment[] environments)
         {
-            var removedEnvironments = widget.Items.Where(k => !release.Environments.Any(e => e.Name == k.Name)).ToList();
+            var removedEnvironments = widget.Items
+                .Where(k => k is VSTSReleaseEnvironment env && environments.All(e => e.Id != env.EnvironmentId)).ToList();
 
-            removedEnvironments.ForEach(env => Application.Current.Dispatcher.Invoke(() => widget.Remove(env)));
+            var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+
+            removedEnvironments.ForEach(env => dispatcher.Invoke(() => widget.Remove(env)));
         }
 
         private static void AddEnvironments(VSTSRelease_v1 widget, VSTSReleaseDetails release)
         {
-            if (widget == null || widget.Items == null)
-                throw new InvalidOperationException();
-
-            foreach (var environment in release.Environments)
+            foreach (var env in release.Environments)
             {
-                var newEnvironment = widget.Items.FirstOrDefault(i => i.Name == environment.Name);
+                var environment = widget.Items.FirstOrDefault(i => i is VSTSReleaseEnvironment e && e.EnvironmentId == env.Id) ?? AddEnvironment(widget, env);
 
-                if (newEnvironment == null)
-                {
-                    newEnvironment = AddEnvironment(widget, environment);
-                }
-
-                newEnvironment.State = environment.State;
+                environment.State = env.State;
             }
         }
 
-        private static VSTSReleaseEnvironment AddEnvironment(VSTSRelease_v1 widget, ReleaseEnvironment environment)
+        private static VSTSReleaseEnvironment AddEnvironment(VSTSRelease_v1 release, ReleaseEnvironment environment)
         {
+            if (!release.ReleaseId.HasValue)
+                throw new InvalidOperationException("Release id was not set.");
+
             var newEnvironment = new VSTSReleaseEnvironment
             {
                 Name = environment.Name,
-                EnvironmentId = environment.Id
+                EnvironmentId = environment.Id,
             };
 
-            var dispatcher = Application.Current != null ? Application.Current.Dispatcher : Dispatcher.CurrentDispatcher;
+            var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
 
-            dispatcher.Invoke(() => widget.Add(newEnvironment));
+            dispatcher.Invoke(() => release.Add(newEnvironment));
 
             return newEnvironment;
         }

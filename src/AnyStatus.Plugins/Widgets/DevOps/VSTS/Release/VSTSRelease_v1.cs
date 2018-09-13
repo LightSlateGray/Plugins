@@ -13,10 +13,8 @@ namespace AnyStatus
     [DisplayName("VSTS Release")]
     [DisplayColumn("DevOps")]
     [Description("Visual Studio Team Services - Release Status and Notifications")]
-    public class VSTSRelease_v1 : VstsPlugin, IHealthCheck, ISchedulable, IWebPage
+    public class VSTSRelease_v1 : VstsWidget, IHealthCheck, ISchedulable, IWebPage, IStartable
     {
-        private const string Category = "Release Definition";
-
         public VSTSRelease_v1() : base(aggregate: true) { }
 
         [Required]
@@ -28,17 +26,17 @@ namespace AnyStatus
 
         [XmlIgnore]
         [Browsable(false)]
-        public long? DefinitionId { get; set; }
+        public long? ReleaseId { get; set; }
 
         [XmlIgnore]
         [Browsable(false)]
-        public string URL => $"https://{Account}.visualstudio.com/{Uri.EscapeDataString(Project)}/_release?definitionId={DefinitionId}&_a=releases";
+        public string URL => $"https://{Account}.visualstudio.com/{Uri.EscapeDataString(Project)}/_release?definitionId={ReleaseId}&_a=releases";
 
         public override object Clone()
         {
             var clone = (VSTSRelease_v1)base.Clone();
 
-            clone.DefinitionId = null;
+            clone.ReleaseId = null;
 
             return clone;
         }

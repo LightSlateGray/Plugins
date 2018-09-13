@@ -7,17 +7,19 @@ namespace AnyStatus
     [DisplayColumn("Metrics")]
     [DisplayName("CPU Usage")]
     [Description("Shows the percentage of CPU usage")]
-    public class CpuUsage : MetricValue, ISchedulable
+    public class CpuUsage : Sparkline, ISchedulable
     {
-        private const string Category = "CPU Usage";
-
         public CpuUsage()
         {
-            Interval = 1;
+            Symbol = "%";
+            Interval = 10;
+            Units = IntervalUnits.Seconds;
+            Name = "CPU Usage";
+            MaxValue = 100;
         }
 
+        [Category("CPU Usage")]
         [DisplayName("Machine Name")]
-        [Category(Category)]
         [Description("Optional. Leave blank for local computer.")]
         public string MachineName { get; set; }
     }

@@ -88,7 +88,6 @@
     <Compile Include="Widgets\Code\PowerShell\PowerShellRunner.cs" />
     <Compile Include="Widgets\HealthChecks\SqlServer\Connection\SqlServerHealthCheck.cs" />
     <Compile Include="Widgets\Metrics\SqlServer\ScalarQuery\SqlScalarQueryHandler.cs" />
-    <Compile Include="Widgets\DevOps\GitHub\Issue\v1\GitHubIssueState.cs" />
     <Compile Include="Widgets\DevOps\GitHub\Issue\v1\GitHubIssueStateCheck.cs" />
     <Compile Include="Widgets\DevOps\GitHub\Issue\v1\OpenWebPage.cs" />
     <Compile Include="Widgets\HealthChecks\IIS\AppPool\AppPoolHealthCheck.cs" />
@@ -161,7 +160,6 @@
     <Compile Include="Widgets\Metrics\SqlServer\ScalarQuery\SqlScalarQuery.cs" />
     <Compile Include="Widgets\HealthChecks\SqlServer\Connection\SqlServerConnection.cs" />
     <Compile Include="Widgets\Metrics\CPU\Usage\CpuUsage.cs" />
-    <Compile Include="Widgets\DevOps\GitHub\Issue\GitHubIssue.cs" />
     <Compile Include="Widgets\DevOps\GitHub\Issue\v1\GitHubIssue.cs" />
     <Compile Include="Widgets\DevOps\CruiseControlNet\CruiseControlNetWidget.cs" />
     <Compile Include="Widgets\DevOps\CruiseControlNet\CruiseControlStateCheck.cs" />

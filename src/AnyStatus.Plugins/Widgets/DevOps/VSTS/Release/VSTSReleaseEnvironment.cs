@@ -5,7 +5,7 @@ namespace AnyStatus
 {
     [Browsable(false)]
     [DisplayName("VSTS Release Environment")]
-    public class VSTSReleaseEnvironment : Widget
+    public class VSTSReleaseEnvironment : Widget, IStartable
     {
         [ReadOnly(true)]
         [DisplayName("Environment Id")]

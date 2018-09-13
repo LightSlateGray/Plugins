@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 
@@ -11,53 +12,29 @@ namespace AnyStatus
 {
     public class VstsClient
     {
-        public VstsClient()
-        {
-            Connection = new VstsConnection();
-        }
+        public string Account { get; set; }
 
-        public VstsClient(VstsConnection connection)
-        {
-            Connection = connection;
-        }
+        public string Project { get; set; }
 
-        public VstsConnection Connection { get; set; }
+        public string UserName { get; set; }
+
+        public string Password { get; set; }
 
         #region Builds
 
         public async Task<VSTSBuildDefinition> GetBuildDefinitionAsync(string name)
         {
-            var definitions = await Request<Collection<VSTSBuildDefinition>>("build/definitions?$top=1&name=" + name);
+            var definitions = await Request<Collection<VSTSBuildDefinition>>("build/definitions?$top=1&name=" + name).ConfigureAwait(false);
 
-            if (definitions == null || definitions.Value == null)
-                throw new Exception("Invalid build definition query response.");
+            if (definitions?.Value == null)
+                throw new Exception("An error occurred while requesting  VSTS build definition.");
 
-            var definition = definitions.Value.FirstOrDefault(k => k.Name.Equals(name));
+            var definition = definitions.Value.Find(k => k.Name.Equals(name));
 
             if (definition == null)
-                throw new Exception("VSTS build definition not found.");
+                throw new Exception($"VSTS build definition {name} was not found.");
 
             return definition;
-        }
-
-        public async Task<VSTSBuild> GetLatestBuildAsync(long definitionId)
-        {
-            var builds = await Request<Collection<VSTSBuild>>($"build/builds?definitions={definitionId}&$top=1&api-version=2.0").ConfigureAwait(false);
-
-            return builds?.Value?.FirstOrDefault();
-        }
-
-        public async Task QueueNewBuildAsync(long definitionId)
-        {
-            var request = new
-            {
-                Definition = new
-                {
-                    Id = definitionId
-                }
-            };
-
-            await Send("build/builds?api-version=2.0", request).ConfigureAwait(false);
         }
 
         #endregion Builds
@@ -68,13 +45,13 @@ namespace AnyStatus
         {
             var definitions = await Request<Collection<VSTSReleaseDefinition>>("release/definitions?searchText=" + name, true).ConfigureAwait(false);
 
-            if (definitions == null || definitions.Value == null)
+            if (definitions?.Value == null)
                 throw new Exception("Invalid release definition query response.");
 
-            var definition = definitions.Value.FirstOrDefault(k => k.Name.Equals(name));
+            var definition = definitions.Value.Find(k => k.Name.Equals(name));
 
             if (definition == null)
-                throw new Exception("Release definition not found.");
+                throw new Exception($"Release definition {name} was not found.");
 
             return definition;
         }
@@ -83,15 +60,15 @@ namespace AnyStatus
         {
             var releases = await Request<Collection<VSTSRelease>>("release/releases?$top=1&definitionId=" + releaseDefinitionId, true).ConfigureAwait(false);
 
-            if (releases == null || releases.Value == null)
-                throw new Exception("VSTS release not found.");
+            if (releases?.Value == null)
+                throw new Exception($"VSTS last release of release definition id {releaseDefinitionId} was not found.");
 
             return releases.Value.FirstOrDefault();
         }
 
         public async Task<VSTSReleaseDetails> GetReleaseDetailsAsync(long releaseId)
         {
-            var details = await Request<VSTSReleaseDetails>("release/releases/" + releaseId, true).ConfigureAwait(false);
+            var details = await Request<VSTSReleaseDetails>($"release/releases/{releaseId}", true).ConfigureAwait(false);
 
             if (details == null)
                 throw new Exception("VSTS Release release details were not found.");
@@ -103,7 +80,7 @@ namespace AnyStatus
 
         #region Helpers
 
-        private async Task<T> Request<T>(string api, bool vsrm = false)
+        internal async Task<T> Request<T>(string api, bool vsrm = false)
         {
             using (var handler = new WebRequestHandler())
             {
@@ -111,18 +88,18 @@ namespace AnyStatus
 
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                if (!string.IsNullOrEmpty(Connection.Password))
+                if (!string.IsNullOrEmpty(Password))
                 {
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Connection.UserName}:{Connection.Password}")));
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes($"{UserName}:{Password}")));
                 }
 
                 var sb = new StringBuilder();
                 sb.Append("https://");
-                sb.Append(Connection.Account);
+                sb.Append(Account);
                 if (vsrm) sb.Append(".vsrm");
                 sb.Append(".visualstudio.com/");
-                sb.Append(Connection.Project);
+                sb.Append(Project);
                 sb.Append("/_apis/");
                 sb.Append(api);
 
@@ -142,7 +119,7 @@ namespace AnyStatus
                 throw new VstsClientException($"Invalid HTTP response status code: {(int)statusCode} ({statusCode}). Please verify your User Name and Password or Personal Acceess Token.");
         }
 
-        private async Task Send<T>(string api, T request = default(T), bool vsrm = false)
+        internal async Task Send<T>(string api, T request = default(T), bool vsrm = false, bool patch = false)
         {
             using (var handler = new WebRequestHandler())
             {
@@ -150,28 +127,44 @@ namespace AnyStatus
 
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                if (!string.IsNullOrEmpty(Connection.Password))
+                if (!string.IsNullOrEmpty(Password))
                 {
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Connection.UserName}:{Connection.Password}")));
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{UserName}:{Password}")));
                 }
 
                 var sb = new StringBuilder();
                 sb.Append("https://");
-                sb.Append(Connection.Account);
+                sb.Append(Account);
                 if (vsrm) sb.Append(".vsrm");
                 sb.Append(".visualstudio.com/");
-                sb.Append(Connection.Project);
+                sb.Append(Project);
                 sb.Append("/_apis/");
                 sb.Append(api);
 
                 var json = new JavaScriptSerializer().Serialize(request);
 
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await httpClient.PostAsync(sb.ToString(), content).ConfigureAwait(false);
+                var response = patch
+                    ? await PatchAsync(httpClient, sb.ToString(), httpContent, CancellationToken.None).ConfigureAwait(false)
+                    : await httpClient.PostAsync(sb.ToString(), httpContent).ConfigureAwait(false);
+
+                //var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
             }
+        }
+
+        private static Task<HttpResponseMessage> PatchAsync(HttpClient client, string requestUri, HttpContent content, CancellationToken cancellationToken)
+        {
+            var method = new HttpMethod("PATCH");
+
+            var request = new HttpRequestMessage(method, requestUri)
+            {
+                Content = content
+            };
+
+            return client.SendAsync(request, cancellationToken);
         }
 
         #endregion Helpers

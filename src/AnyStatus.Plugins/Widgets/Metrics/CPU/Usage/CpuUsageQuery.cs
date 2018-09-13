@@ -10,19 +10,16 @@ namespace AnyStatus
         [DebuggerStepThrough]
         public async Task Handle(MetricQueryRequest<CpuUsage> request, CancellationToken cancellationToken)
         {
-            var usage = await GetCpuUsageAsync(request.DataContext.MachineName).ConfigureAwait(false);
-
-            request.DataContext.Value = usage + "%";
+            request.DataContext.Value = await GetCpuUsageAsync(request.DataContext.MachineName).ConfigureAwait(false);
 
             request.DataContext.State = State.Ok;
         }
 
-        public async Task<int> GetCpuUsageAsync(string machineName)
+        private static async Task<int> GetCpuUsageAsync(string machineName)
         {
-            if (string.IsNullOrWhiteSpace(machineName))
-                machineName = ".";
-
-            var counter = new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total", machineName);
+            var counter = string.IsNullOrWhiteSpace(machineName)
+                ? new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total")
+                : new System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total", machineName);
 
             counter.NextValue();
 

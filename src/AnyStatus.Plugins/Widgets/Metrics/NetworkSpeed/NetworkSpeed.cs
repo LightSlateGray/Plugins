@@ -5,9 +5,9 @@ using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace AnyStatus
 {
-    public abstract class NetworkSpeed : MetricValue, IHealthCheck, ISchedulable
+    public abstract class NetworkSpeed : Metric, IHealthCheck, ISchedulable
     {
-        public NetworkSpeed()
+        protected NetworkSpeed()
         {
             Interval = 1;
         }
